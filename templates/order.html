@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - My Minimal E-commerce Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Style for the button, adding more visual appeal */
+        .action-button {
+            background-image: linear-gradient(to right, #6EE7B7 0%, #34D399  51%, #10B981  100%);
+            margin: 10px;
+            padding: 12px 30px;
+            text-align: center;
+            text-transform: uppercase;
+            transition: 0.5s;
+            background-size: 200% auto;
+            color: white;
+            box-shadow: 0 0 20px #eee;
+            border-radius: 10px;
+            display: block;
+        }
+        .action-button:hover {
+            background-position: right center; /* change the direction of the change here */
+            color: #fff;
+            text-decoration: none;
+        }
+        /* Style for flash messages */
+        .flash-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+        .flash-message.success {
+            background-color: #d1fae5; /* green-100 */
+            color: #065f46; /* green-800 */
+            border: 1px solid #34d399; /* green-400 */
+        }
+        .flash-message.error {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+            border: 1px solid #ef4444; /* red-400 */
+        }
+        .flash-message.info {
+            background-color: #dbeafe; /* blue-100 */
+            color: #1e40af; /* blue-800 */
+            border: 1px solid #60a5fa; /* blue-400 */
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold tracking-tight">My Awesome Shop</h1>
+            <nav class="flex items-center space-x-4">
+                <a href="{{ url_for('index') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition-colors duration-200">Home</a>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('add_product') }}" class="action-button inline-block">Add Product</a>
+                    <a href="{{ url_for('cart') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 mr-1">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.023.83L5.6 11.3H17.5M9.75 10.5h6.249c.51 0 .956.343 1.022.83l.736 4.413c.066.398-.014.807-.265 1.134a1.86 1.86 0 01-1.018.583H11.25a1.86 1.86 0 01-1.018-.583c-.251-.327-.331-.736-.265-1.134L9.75 10.5zm6.75 6a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                        Cart
+                    </a>
+                    <a href="{{ url_for('orders') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition-colors duration-200">My Orders</a>
+                    <a href="{{ url_for('logout') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition-colors duration-200">Logout ({{ current_user.username }})</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition-colors duration-200">Login</a>
+                    <a href="{{ url_for('register') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition-colors duration-200">Register</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <!-- Flash Messages Container -->
+    <div class="container mx-auto px-4 mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content - Order History -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Your Order History</h2>
+
+        {% if orders %}
+            <div class="space-y-8">
+                {% for order in orders %}
+                    <div class="bg-white rounded-xl shadow-md p-6">
+                        <div class="flex justify-between items-center mb-4 border-b pb-4">
+                            <h3 class="text-xl font-semibold text-gray-900">Order #{{ order.id }}</h3>
+                            <div class="text-sm text-gray-600">
+                                <p>Date: {{ order.order_date }}</p>
+                                <p class="text-lg font-bold text-indigo-600">Total: ${{ "%.2f" | format(order.total_amount) }}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            {% for item in order.items %}
+                                <div class="flex items-center space-x-4 border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                                    <div class="flex-shrink-0 w-20 h-20">
+                                        <img class="w-full h-full object-cover rounded-md" src="{{ item.image_url }}" alt="{{ item.name }}" onerror="this.onerror=null;this.src='https://placehold.co/80x80/F0F0F0/000000?text=No+Image';">
+                                    </div>
+                                    <div class="flex-grow">
+                                        <p class="font-medium text-gray-900">{{ item.name }}</p>
+                                        <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
+                                        <p class="text-sm font-semibold text-indigo-500">Price at Purchase: ${{ "%.2f" | format(item.price_at_purchase) }}</p>
+                                    </div>
+                                    <div class="text-right text-lg font-bold text-gray-800">
+                                        ${{ "%.2f" | format(item.quantity * item.price_at_purchase) }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-gray-500 text-lg">You have no past orders yet.</p>
+            <div class="mt-6 text-center">
+                <a href="{{ url_for('index') }}" class="action-button inline-block">Start Shopping</a>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-8 shadow-inner">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2024 My Awesome Shop. All rights reserved.</p>
+            <p class="text-sm mt-2">Built with Flask and Tailwind CSS.</p>
+        </div>
+    </footer>
+</body>
+</html>
